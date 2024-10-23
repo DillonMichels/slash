@@ -1,3 +1,4 @@
+
 """
 Copyright (C) 2023 SE23-Team44
  
@@ -5,12 +6,54 @@ Licensed under the MIT License.
 See the LICENSE file in the project root for the full license information.
 """
 
+def filter(products, min_price=None, max_price=None, min_rating=None):
+    """
+    Filters the list of products based on price range and minimum rating.
+    
+    Parameters:
+    - products: List of product dictionaries.
+    - min_price: Minimum price to filter by.
+    - max_price: Maximum price to filter by.
+    - min_rating: Minimum rating to filter by.
+    
+    Returns:
+    - A list of filtered products.
+    """
+    filtered_products = []
+    
+    for product in products:
+        # Extract price and rating, ensuring we handle missing data
+        try:
+            price = float(product['price'].replace('$', '').replace(',', '')) if product['price'] != 'N/A' else None
+        except (ValueError, KeyError):
+            price = None
+        
+        try:
+            rating = float(product['rating']) if product['rating'] != 'N/A' else None
+        except (ValueError, KeyError):
+            rating = None
+        
+        # Apply filters
+        if min_price is not None and price is not None and price < min_price:
+            continue
+        if max_price is not None and price is not None and price > max_price:
+            continue
+        if min_rating is not None and rating is not None and rating < min_rating:
+            continue
+        
+        # Add product to the filtered list if it meets all criteria
+        filtered_products.append(product)
+    
+    return filtered_products
+
 from flask import Flask, session, render_template, request, redirect, url_for
-from .scraper import driver, filter
+# from .scraper import driver, filter
+from .scraper import driver
 from .formatter import formatResult
 import json
 from .features import create_user, check_user, wishlist_add_item, read_wishlist, wishlist_remove_list, share_wishlist
 from .config import Config
+import re
 
 app = Flask(__name__, template_folder=".")
 
@@ -71,7 +114,9 @@ def product_search(new_product="", sort=None, currency=None, num=None, min_price
     if product == None:
         product = new_product
 
-    data = driver(product, currency, num, 0, False, None, True, sort)
+    # data = driver(product, currency, num, 0, False, None, True, sort)
+
+    data = driver(product, currency, num, False, sort)
 
     if min_price is not None or max_price is not None or min_rating is not None:
         data = filter(data, min_price, max_price, min_rating)
